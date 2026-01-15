@@ -8,5 +8,5 @@ building docker image and pushing to ECR.
 
    -> docker push 319255955334.dkr.ecr.us-east-1.amazonaws.com/roboshop/catalogue:latest 
 
- * In jenkins u need to download AWS plugin ---->AWS STEPS
+ * In jenkins u need to download AWS plugin ---->AWS STEPS (for aws credentials)
  * which will help to access credentials of amazon to enter into it access ECR to store docker image after buiding and tagging with respective name. 

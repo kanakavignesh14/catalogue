@@ -8,7 +8,7 @@ pipeline {
     environment {
         COURSE = "jenkins"
         appversion = ""
-        ACCT_Id = "319255955334"
+        ACCT_Id = "426130536166"
         PROJECT = "roboshop"
         COMPONENT = "catalogue"
     }
@@ -43,13 +43,24 @@ pipeline {
                 }
             }
         }
+
+        stage('Unit Testing') {
+            steps {
+                script {
+                    sh """ 
+                        npm test
+                        
+                    """    
+                }
+            }
+        }
         stage('Build image'){
             steps {
                 script {
                     withAWS(region:'us-east-1',credentials:'aws-creds') {
                         sh """
-                            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin         ${ACCT_Id}.dkr.ecr.us-east-1.amazonaws.com
-
+                            
+                            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ACCT_Id}.dkr.ecr.us-east-1.amazonaws.com
                             docker build -t ${Acct_Id}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appversion} .
 
                             docker images
