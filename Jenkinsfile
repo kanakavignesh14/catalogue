@@ -75,13 +75,27 @@ pipeline {
         }
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'HOURS') {
+                timeout(time: 1, unit: 'MINUTES') {
                     // Wait for the quality gate status
                     // abortPipeline: true will fail the Jenkins job if the quality gate is 'FAILED'
                     waitForQualityGate abortPipeline: true 
                 }
             }
         }
+
+        stage('Trivy Scan'){
+            steps {
+                script{
+                    sh """
+                        trivy image \
+                        --scanners vuln \
+                        --severity HIGH,CRITICAL,MEDIUM \
+                        --pkg-types os \
+                        --exit-code 1 \
+                        --format table \
+                        ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
+                    """
+                }
         stage('Build image'){
             steps {
                 script {
