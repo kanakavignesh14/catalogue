@@ -6,35 +6,33 @@ pipeline {
     }
 
     environment {
-        COURSE = "jenkins"
+        COURSE     = "jenkins"
         appversion = ""
-        ACCT_Id = "426130536166"
-        PROJECT = "roboshop"
-        COMPONENT = "catalogue"
+        ACCT_Id    = "426130536166"
+        PROJECT    = "roboshop"
+        COMPONENT  = "catalogue"
     }
 
     options {
-        //timeout(time: 10, unit: 'SECONDS')   // pipeline max runtime
-        disableConcurrentBuilds()            // prevent parallel runs
+        // timeout(time: 10, unit: 'SECONDS')
+        disableConcurrentBuilds()
     }
-    
-
 
     stages {
+
         stage('Read version') {
             steps {
                 script {
                     def packageJSON = readJSON file: 'package.json'
                     appversion = packageJSON.version
 
-                    echo "package verion ${appversion}"
-                        
+                    echo "package version ${appversion}"
+
                     sh """
-                       pwd
-                       ls -l
+                        pwd
+                        ls -l
                         whoami
-                    """    
-                   
+                    """
                 }
             }
         }
@@ -42,10 +40,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    sh """ 
+                    sh """
                         npm install
-                        
-                    """    
+                    """
                 }
             }
         }
@@ -53,39 +50,37 @@ pipeline {
         stage('Unit Testing') {
             steps {
                 script {
-                    sh """ 
+                    sh """
                         npm test
-                        
-                    """    
-                }
-            }
-        }
-        //Here you need to select scanner tool and send the analysis to server
-        stage('Sonar Scan'){
-            environment {
-                def scannerHome = tool 'sonar-8.0'
-            }
-            steps {
-                script{
-                    withSonarQubeEnv('sonar-server') {
-                        sh  "${scannerHome}/bin/sonar-scanner"
-                    }
-                }
-            }
-        }
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 1, unit: 'MINUTES') {
-                    // Wait for the quality gate status
-                    // abortPipeline: true will fail the Jenkins job if the quality gate is 'FAILED'
-                    waitForQualityGate abortPipeline: true 
+                    """
                 }
             }
         }
 
-        stage('Trivy Scan'){
+        stage('Sonar Scan') {
+            environment {
+                def scannerHome = tool 'sonar-8.0'
+            }
             steps {
-                script{
+                script {
+                    withSonarQubeEnv('sonar-server') {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                script {
                     sh """
                         trivy image \
                         --scanners vuln \
@@ -96,21 +91,24 @@ pipeline {
                         ${ACC_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
                     """
                 }
-        stage('Build image'){
+            }
+        }
+
+        stage('Build image') {
             steps {
                 script {
-                    withAWS(region:'us-east-1',credentials:'aws-creds') {
+                    withAWS(region: 'us-east-1', credentials: 'aws-creds') {
                         sh """
-                            
-                            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ACCT_Id}.dkr.ecr.us-east-1.amazonaws.com
+                            aws ecr get-login-password --region us-east-1 | \
+                            docker login --username AWS --password-stdin ${ACCT_Id}.dkr.ecr.us-east-1.amazonaws.com
+
                             docker build -t ${Acct_Id}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appversion} .
 
                             docker images
 
                             docker push ${Acct_Id}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appversion}
                         """
-                            
-                   }
+                    }
                 }
             }
         }
