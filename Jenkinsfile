@@ -17,6 +17,8 @@ pipeline {
         //timeout(time: 10, unit: 'SECONDS')   // pipeline max runtime
         disableConcurrentBuilds()            // prevent parallel runs
     }
+    
+
 
     stages {
         stage('Read version') {
@@ -27,7 +29,11 @@ pipeline {
 
                     echo "package verion ${appversion}"
                         
-                        
+                    sh """
+                       pwd
+                       ls -l
+                        whoami
+                    """    
                    
                 }
             }
@@ -64,6 +70,15 @@ pipeline {
                     withSonarQubeEnv('sonar-server') {
                         sh  "${scannerHome}/bin/sonar-scanner"
                     }
+                }
+            }
+        }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    // Wait for the quality gate status
+                    // abortPipeline: true will fail the Jenkins job if the quality gate is 'FAILED'
+                    waitForQualityGate abortPipeline: true 
                 }
             }
         }
